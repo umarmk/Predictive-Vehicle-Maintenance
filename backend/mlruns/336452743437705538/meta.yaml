@@ -1,0 +1,6 @@
+artifact_location: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/336452743437705538
+creation_time: 1745164692352
+experiment_id: '336452743437705538'
+last_update_time: 1745164692352
+lifecycle_stage: active
+name: vehicle_maintenance_ensemble

@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/843812247872975694/bb772c01303046ac9fecff3b739c2071/artifacts
+end_time: 1745164040600
+entry_point_name: ''
+experiment_id: '843812247872975694'
+lifecycle_stage: active
+run_id: bb772c01303046ac9fecff3b739c2071
+run_name: IsolationForest_Anomaly
+run_uuid: bb772c01303046ac9fecff3b739c2071
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745164036827
+status: 3
+tags: []
+user_id: umarm

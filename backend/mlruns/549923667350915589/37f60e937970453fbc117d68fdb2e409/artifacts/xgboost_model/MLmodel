@@ -1,0 +1,21 @@
+artifact_path: xgboost_model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.2
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+mlflow_version: 2.21.3
+model_size_bytes: 802814
+model_uuid: f1f1997b57fa4367a1ff1d247740c18a
+prompts: null
+run_id: 37f60e937970453fbc117d68fdb2e409
+utc_time_created: '2025-04-20 15:48:15.372801'

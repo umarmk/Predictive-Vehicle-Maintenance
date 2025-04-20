@@ -1,0 +1,6 @@
+artifact_location: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/843812247872975694
+creation_time: 1745163678381
+experiment_id: '843812247872975694'
+last_update_time: 1745163678381
+lifecycle_stage: active
+name: vehicle_maintenance_anomaly_detection

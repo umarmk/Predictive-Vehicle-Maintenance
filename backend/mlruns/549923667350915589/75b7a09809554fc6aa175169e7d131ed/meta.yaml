@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/549923667350915589/75b7a09809554fc6aa175169e7d131ed/artifacts
+end_time: 1745163533773
+entry_point_name: ''
+experiment_id: '549923667350915589'
+lifecycle_stage: active
+run_id: 75b7a09809554fc6aa175169e7d131ed
+run_name: XGBoost_Classification
+run_uuid: 75b7a09809554fc6aa175169e7d131ed
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745163533714
+status: 4
+tags: []
+user_id: umarm

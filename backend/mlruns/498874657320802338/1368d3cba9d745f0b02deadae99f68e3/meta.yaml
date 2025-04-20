@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/498874657320802338/1368d3cba9d745f0b02deadae99f68e3/artifacts
+end_time: 1745164988897
+entry_point_name: ''
+experiment_id: '498874657320802338'
+lifecycle_stage: active
+run_id: 1368d3cba9d745f0b02deadae99f68e3
+run_name: LSTM_Forecasting
+run_uuid: 1368d3cba9d745f0b02deadae99f68e3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745164984151
+status: 3
+tags: []
+user_id: umarm
