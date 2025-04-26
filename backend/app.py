@@ -1,46 +1,101 @@
-# Flask backend for Predictive Vehicle Maintenance System
+import os
+import joblib
+import torch
+import pandas as pd
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
+from model_utils import predict_with_model
+from xai_utils import get_shap_explanation, get_lime_explanation
+from lstm_pytorch_utils import LSTMNet
 
 app = Flask(__name__)
 CORS(app)
 
-from model_utils import load_model, predict_with_model
-from xai_utils import get_shap_explanation, get_lime_explanation
-import pandas as pd
-import numpy as np
+# Load models at startup
+def load_models():
+    """
+    Load LightGBM and LSTM models from disk. Raise error if LightGBM not found.
+    """
+    models = {}
+    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    lgb_path = os.path.join(models_dir, 'lightgbm_model.pkl')
+    if not os.path.exists(lgb_path):
+        raise FileNotFoundError(f"Missing LightGBM model at {lgb_path}")
+    models['lightgbm'] = joblib.load(lgb_path)
+    # Attempt to load a full LSTM nn.Module; state_dicts are ignored
+    models['lstm'] = None
+    lstm_path = os.path.join(models_dir, 'lstm_model.pt')
+    if os.path.exists(lstm_path):
+        try:
+            obj = torch.load(lstm_path, map_location='cpu')
+            if hasattr(obj, 'forward'):
+                obj.eval()
+                models['lstm'] = obj
+            else:
+                print("Ignoring LSTM state_dict, not a full nn.Module.")
+        except Exception as e:
+            print(f"Could not load LSTM model: {e}")
+    return models
 
-# Load models (replace with actual paths/names as needed)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'xgboost_model.pkl')
-try:
-    model = load_model(MODEL_PATH)
-except Exception as e:
-    model = None
-    print(f"Warning: Could not load model from {MODEL_PATH}: {e}")
-
-# In-memory history for demo purposes
+MODELS = load_models()
 PREDICTION_HISTORY = []
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    """
+    POST /predict
+    Request JSON: { ...features..., "model": "xgboost"|"lightgbm"|"ensemble" }
+    Returns: { "predictions": [...] }
+    """
+    # Select LightGBM for classification
+    model = MODELS['lightgbm']
     if 'file' in request.files:
-        # Batch prediction from uploaded file
         file = request.files['file']
-        df = pd.read_csv(file)
+        try:
+            df = pd.read_csv(file)
+        except Exception as e:
+            return jsonify({'error': f'Invalid CSV upload: {e}'}), 400
     else:
-        # Single prediction from JSON
-        data = request.get_json()
-        df = pd.DataFrame([data])
-    if model is None:
-        return jsonify({'error': 'ML model not loaded'}), 500
+        payload = request.get_json(force=True)
+        df = pd.DataFrame([payload])
+    # Validate model and input
+    if df.empty:
+        return jsonify({'error': 'No input data provided.'}), 400
+    # Align features
+    expected = getattr(model, 'feature_names_in_', None)
+    if expected is not None:
+        missing = [f for f in expected if f not in df.columns]
+        extra = [f for f in df.columns if f not in expected]
+        if missing:
+            return jsonify({'error': f'Missing features for model: {missing}'}), 400
+        if extra:
+            df = df[[f for f in expected]]  # drop extras, enforce order
     try:
         preds = predict_with_model(model, df)
-        result = {'predictions': preds.tolist()}
         PREDICTION_HISTORY.append({'input': df.to_dict(), 'prediction': preds.tolist()})
-        return jsonify(result)
+        return jsonify({'predictions': preds.tolist()})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+
+@app.route('/predict/timeseries', methods=['POST'])
+def predict_timeseries():
+    """
+    POST /predict/timeseries
+    Request JSON: { "series": [ ... ], "seq_length": 10 }
+    Returns: { "prediction": ... }
+    """
+    data = request.get_json(force=True)
+    series = data.get('series')
+    if not series or not isinstance(series, (list, tuple)):
+        return jsonify({'error': 'Missing or invalid "series" data.'}), 400
+    # Naive forecast: return the last value
+    try:
+        pred = float(series[-1])
+    except Exception as e:
+        return jsonify({'error': f'Forecasting error: {e}'}), 500
+    return jsonify({'prediction': pred})
 
 @app.route('/history', methods=['GET'])
 def history():
@@ -49,17 +104,18 @@ def history():
 
 @app.route('/explain', methods=['POST'])
 def explain():
-    data = request.get_json()
-    method = data.get('method', 'shap')
-    input_data = pd.DataFrame([data['input']]) if 'input' in data else None
-    if model is None or input_data is None:
-        return jsonify({'error': 'Model or input data missing'}), 400
+    payload = request.get_json(force=True)
+    method = payload.get('method', 'shap')
+    if 'input' not in payload:
+        return jsonify({'error': 'Missing "input" key.'}), 400
+    df_input = pd.DataFrame([payload['input']])
+    model = MODELS['lightgbm']
     try:
         if method == 'shap':
-            shap_values = get_shap_explanation(model, input_data)
+            shap_values = get_shap_explanation(model, df_input)
             return jsonify({'shap_values': np.array(shap_values).tolist()})
         elif method == 'lime':
-            lime_values = get_lime_explanation(model, input_data, input_data.columns.tolist())
+            lime_values = get_lime_explanation(model, df_input, df_input.columns.tolist())
             return jsonify({'lime_values': lime_values})
         else:
             return jsonify({'error': 'Unknown explanation method'}), 400
