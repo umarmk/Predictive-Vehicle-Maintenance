@@ -8,9 +8,13 @@ from flask_cors import CORS
 from model_utils import predict_with_model
 from xai_utils import get_shap_explanation, get_lime_explanation
 from lstm_pytorch_utils import LSTMNet
+import logging
+from pandas.api.types import is_numeric_dtype
 
 app = Flask(__name__)
 CORS(app)
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # Load models at startup
 def load_models():
@@ -71,6 +75,11 @@ def predict():
             return jsonify({'error': f'Missing features for model: {missing}'}), 400
         if extra:
             df = df[[f for f in expected]]  # drop extras, enforce order
+    # Validate numeric types
+    invalid = [f for f in df.columns if not is_numeric_dtype(df[f])]
+    if invalid:
+        logging.warning(f"Non-numeric features: {invalid}")
+        return jsonify({'error': f'Non-numeric features: {invalid}'}), 400
     try:
         preds = predict_with_model(model, df)
         PREDICTION_HISTORY.append({'input': df.to_dict(), 'prediction': preds.tolist()})
@@ -88,8 +97,16 @@ def predict_timeseries():
     """
     data = request.get_json(force=True)
     series = data.get('series')
-    if not series or not isinstance(series, (list, tuple)):
-        return jsonify({'error': 'Missing or invalid "series" data.'}), 400
+    # Validate series list and numeric elements
+    if not isinstance(series, (list, tuple)):
+        logging.warning('Invalid "series" type')
+        return jsonify({'error': '"series" must be a list of numbers.'}), 400
+    if len(series) == 0:
+        logging.warning('Empty "series"')
+        return jsonify({'error': '"series" must contain at least one element.'}), 400
+    if any(not isinstance(x, (int, float)) for x in series):
+        logging.warning('Non-numeric elements in "series"')
+        return jsonify({'error': 'All "series" elements must be numeric.'}), 400
     # Naive forecast: return the last value
     try:
         pred = float(series[-1])
@@ -105,12 +122,25 @@ def history():
 @app.route('/explain', methods=['POST'])
 def explain():
     payload = request.get_json(force=True)
-    method = payload.get('method', 'shap')
-    if 'input' not in payload:
-        return jsonify({'error': 'Missing "input" key.'}), 400
-    df_input = pd.DataFrame([payload['input']])
+    # Validate input structure
+    if 'input' not in payload or not isinstance(payload['input'], dict):
+        logging.warning('Missing or invalid "input" for explain')
+        return jsonify({'error': '"input" must be a JSON object of features.'}), 400
     model = MODELS['lightgbm']
+    expected = getattr(model, 'feature_names_in_', None)
+    if expected is not None:
+        missing = [f for f in expected if f not in payload['input']]
+        if missing:
+            logging.warning(f"Missing explanation features: {missing}")
+            return jsonify({'error': f'Missing features for explanation: {missing}'}), 400
+    df_input = pd.DataFrame([payload['input']])
+    # Ensure numeric features
+    non_numeric = [c for c in df_input.columns if not is_numeric_dtype(df_input[c])]
+    if non_numeric:
+        logging.warning(f"Non-numeric explain features: {non_numeric}")
+        return jsonify({'error': f'Non-numeric features for explanation: {non_numeric}'}), 400
     try:
+        method = payload.get('method', 'shap')
         if method == 'shap':
             shap_values = get_shap_explanation(model, df_input)
             return jsonify({'shap_values': np.array(shap_values).tolist()})

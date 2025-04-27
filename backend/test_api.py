@@ -28,6 +28,39 @@ def test_predict_timeseries():
     r = requests.post(f"{base_url}/predict/timeseries", json=payload)
     print("/predict/timeseries:", r.status_code, r.json())
 
+def test_predict_missing_feature():
+    # Incomplete payload: missing required features
+    payload = {"Engine_Temperature_(°C)": 90.0}
+    r = requests.post(f"{base_url}/predict", json=payload)
+    print("/predict missing features:", r.status_code, r.json())
+
+def test_explain_shap():
+    # Valid explain request using SHAP
+    payload = {
+        "input": {
+            "Engine_Temperature_(°C)": 90.0,
+            "Brake_Pad_Thickness_(mm)": 10.0,
+            "Tire_Pressure_(PSI)": 32.0,
+            "Anomaly_Indication": 0,
+            "is_engine_failure": 1,
+            "is_brake_failure": 0,
+            "is_battery_failure": 0,
+            "is_low_tire_pressure": 0,
+            "is_maintenance_required": 0
+        },
+        "method": "shap"
+    }
+    r = requests.post(f"{base_url}/explain", json=payload)
+    print("/explain shap:", r.status_code, r.json())
+
+def test_explain_missing_input():
+    # Missing input key
+    r = requests.post(f"{base_url}/explain", json={})
+    print("/explain missing input:", r.status_code, r.json())
+
 if __name__ == "__main__":
     test_predict_lightgbm()
+    test_predict_missing_feature()
     test_predict_timeseries()
+    test_explain_shap()
+    test_explain_missing_input()
