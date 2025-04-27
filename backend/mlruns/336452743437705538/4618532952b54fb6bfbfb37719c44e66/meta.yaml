@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/336452743437705538/4618532952b54fb6bfbfb37719c44e66/artifacts
+end_time: 1745168219476
+entry_point_name: ''
+experiment_id: '336452743437705538'
+lifecycle_stage: active
+run_id: 4618532952b54fb6bfbfb37719c44e66
+run_name: Voting_Ensemble_XGB_LGBM
+run_uuid: 4618532952b54fb6bfbfb37719c44e66
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745168215074
+status: 3
+tags: []
+user_id: umarm

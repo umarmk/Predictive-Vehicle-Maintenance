@@ -27,22 +27,46 @@ Predictive-Vehicle-Maintenance/
    cd Predictive-Vehicle-Maintenance
    ```
 
-2. **Data Preprocessing:**
-   - Run the preprocessing script:
-     ```bash
-     python notebooks/data_preprocessing.py
-     ```
-   - Or use the provided Jupyter notebooks for interactive exploration.
+2. **Install dependencies:**
+   ```bash
+   pip install flask flask-cors pandas numpy scikit-learn imbalanced-learn lightgbm torch joblib mlflow shap lime requests
+   ```
 
-3. **Project Phases:**
-   - Phase 1: Data Preparation & EDA (see notebooks/)
-   - Phase 2: Model development (to be added)
-   - Further phases: Web integration, deployment, etc.
+3. **Data Preprocessing:**
+   ```bash
+   cd backend
+   python data_preprocessing.py
+   ```
+   Or explore with the Jupyter notebooks in `/notebooks`.
+
+4. **Model Training:**
+   ```bash
+   python model_development.py
+   ```
+
+5. **Start the API server:**
+   ```bash
+   python app.py
+   ```
+
+6. **Run tests:**
+   ```bash
+   python test_api.py
+   ```
+
+## Project Phases
+- Phase 1: Data Preparation & EDA (complete)
+- Phase 2: Model Development & Optimization (complete)
+- Phase 3: API Integration & Automated Testing (complete)
+- Phase 4: Explainability Module (SHAP/LIME) (complete)
+- Phase 5: Time Series Forecasting Improvements (in progress)
+- Phase 6: Deployment & Dockerization (planned)
+- Phase 7: Frontend Dashboard (React) (planned)
+- Phase 8: CI/CD & Monitoring (planned)
 
 ## Requirements
 - Python 3.8+
-- pandas, numpy, scikit-learn, matplotlib, seaborn (see notebooks for details)
+- pandas, numpy, scikit-learn, matplotlib, seaborn, flask, flask-cors, imbalanced-learn, lightgbm, torch, joblib, mlflow, shap, lime, requests
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-

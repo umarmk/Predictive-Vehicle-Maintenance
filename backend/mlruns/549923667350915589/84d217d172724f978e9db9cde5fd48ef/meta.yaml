@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/umarm/windsurfprojects/Predictive-Vehicle-Maintenance/backend/mlruns/549923667350915589/84d217d172724f978e9db9cde5fd48ef/artifacts
+end_time: 1745662862290
+entry_point_name: ''
+experiment_id: '549923667350915589'
+lifecycle_stage: active
+run_id: 84d217d172724f978e9db9cde5fd48ef
+run_name: LightGBM_Classification
+run_uuid: 84d217d172724f978e9db9cde5fd48ef
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745662854841
+status: 3
+tags: []
+user_id: umarm
