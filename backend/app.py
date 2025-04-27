@@ -92,27 +92,58 @@ def predict():
 def predict_timeseries():
     """
     POST /predict/timeseries
-    Request JSON: { "series": [ ... ], "seq_length": 10 }
+    Request JSON: { "series": [ ... ], "seq_length": <int> }
     Returns: { "prediction": ... }
     """
     data = request.get_json(force=True)
+    # Extract parameters
     series = data.get('series')
+    seq_length = data.get('seq_length', 10)
+    # Validate seq_length
+    try:
+        seq_length = int(seq_length)
+    except:
+        logging.warning('Invalid seq_length')
+        return jsonify({'error': '"seq_length" must be an integer.'}), 400
     # Validate series list and numeric elements
     if not isinstance(series, (list, tuple)):
         logging.warning('Invalid "series" type')
         return jsonify({'error': '"series" must be a list of numbers.'}), 400
-    if len(series) == 0:
-        logging.warning('Empty "series"')
-        return jsonify({'error': '"series" must contain at least one element.'}), 400
+    if len(series) < seq_length:
+        logging.warning('Series shorter than seq_length')
+        return jsonify({'error': f'Series length must be >= seq_length ({seq_length}).'}), 400
     if any(not isinstance(x, (int, float)) for x in series):
         logging.warning('Non-numeric elements in "series"')
         return jsonify({'error': 'All "series" elements must be numeric.'}), 400
-    # Naive forecast: return the last value
+    # Paths
+    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    scaler_file = os.path.join(models_dir, 'lstm_scaler.pkl')
+    model_file = os.path.join(models_dir, 'lstm_model.pt')
+    if not os.path.exists(scaler_file) or not os.path.exists(model_file):
+        logging.error('LSTM model or scaler not found.')
+        return jsonify({'error': 'LSTM model/scaler missing. Run model_development.py first.'}), 500
+    # Load scaler and model
     try:
-        pred = float(series[-1])
+        scaler_ts = joblib.load(scaler_file)
+        state_dict = torch.load(model_file, map_location='cpu')
+        lstm = LSTMNet(input_size=1)
+        lstm.load_state_dict(state_dict)
+        lstm.eval()
     except Exception as e:
-        return jsonify({'error': f'Forecasting error: {e}'}), 500
-    return jsonify({'prediction': pred})
+        logging.error(f'Error loading LSTM model/scaler: {e}')
+        return jsonify({'error': f'LSTM load error: {e}'}), 500
+    # Prepare input sequence
+    arr = np.array(series, dtype=float).reshape(-1,1)
+    scaled = scaler_ts.transform(arr)
+    x_seq = scaled[-seq_length:]
+    x_tensor = torch.tensor(x_seq.reshape(1, seq_length, 1), dtype=torch.float32)
+    try:
+        with torch.no_grad():
+            pred_val = lstm(x_tensor).item()
+    except Exception as e:
+        logging.error(f'LSTM prediction error: {e}')
+        return jsonify({'error': f'Prediction error: {e}'}), 500
+    return jsonify({'prediction': pred_val})
 
 @app.route('/history', methods=['GET'])
 def history():

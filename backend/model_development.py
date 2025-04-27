@@ -33,11 +33,13 @@ for f in glob.glob(os.path.join(models_dir, '*.pkl')):
 
 # 3. Use vehicle_sensor_data_synthetic.csv for classification
 df = pd.read_csv(os.path.join(data_dir, 'vehicle_sensor_data_synthetic.csv'))
+# Normalize column names: replace spaces with underscores for consistency
+df.columns = [col.replace(' ', '_') for col in df.columns]
 if 'failure_type' not in df.columns:
     raise ValueError('Expected target column "failure_type" not found in synthetic data.')
 
 # 4. Prepare features and target
-non_feature_cols = ['failure_type', 'Maintenance Type']
+non_feature_cols = ['failure_type', 'Maintenance_Type']
 X = df.drop(columns=[col for col in non_feature_cols if col in df.columns])
 y = df['failure_type']
 
@@ -137,13 +139,15 @@ for f in glob.glob(os.path.join(models_dir, '*.pkl')):
 
 # 2. Use vehicle_sensor_data_synthetic.csv for classification
 df = pd.read_csv(os.path.join(data_dir, 'vehicle_sensor_data_synthetic.csv'))
+# Normalize column names: replace spaces with underscores for consistency
+df.columns = [col.replace(' ', '_') for col in df.columns]
 
 # Use the synthetic 'failure_type' column as target
 if 'failure_type' not in df.columns:
     raise ValueError('Expected target column "failure_type" not found in synthetic data.')
 
 # Drop non-numeric columns for ML models
-non_feature_cols = ['failure_type', 'Maintenance Type']
+non_feature_cols = ['failure_type', 'Maintenance_Type']
 X = df.drop(columns=[col for col in non_feature_cols if col in df.columns])
 y = df['failure_type']
 
@@ -216,3 +220,25 @@ with mlflow.start_run(run_name="LightGBM_Classification"):
         print(f"Class counts: {Counter(y_train)})")
         pass
 # --- End LightGBM Only ---
+# --- Time Series Forecasting: LSTM Model Training ---
+import torch
+import joblib
+from lstm_pytorch_utils import train_lstm
+print("Starting LSTM time-series training...")
+try:
+    # Use Engine_Temperature for forecasting
+    series = df["Engine_Temperature_(°C)"].values.astype(float)
+    model_ts, scaler_ts, rmse, mape, _, _ = train_lstm(
+        series, seq_length=10, epochs=20, lr=0.001,
+        batch_size=16, hidden_size=32, num_layers=1
+    )
+    # Save model state_dict and scaler
+    lstm_model_path = os.path.join(models_dir, 'lstm_model.pt')
+    torch.save(model_ts.state_dict(), lstm_model_path)
+    scaler_path = os.path.join(models_dir, 'lstm_scaler.pkl')
+    joblib.dump(scaler_ts, scaler_path)
+    print(f"Saved LSTM state_dict to {lstm_model_path}")
+    print(f"Saved LSTM scaler to {scaler_path}")
+    print(f"LSTM RMSE: {rmse:.4f}, MAPE: {mape:.4f}")
+except Exception as e:
+    print(f"Time series LSTM training failed: {e}")
