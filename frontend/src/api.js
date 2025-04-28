@@ -1,37 +1,19 @@
-// api.js
-// Utility functions for interacting with Flask backend
+import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const client = axios.create();
 
-export async function predictSingle(data) {
-  const res = await fetch(`${API_BASE}/predict`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return res.json();
+export function predictVehicle(data) {
+  return client.post('/predict', data).then((res) => res.data);
 }
 
-export async function predictBatch(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch(`${API_BASE}/predict`, {
-    method: 'POST',
-    body: formData
-  });
-  return res.json();
+export function predictTimeseries(data) {
+  return client.post('/predict/timeseries', data).then((res) => res.data);
 }
 
-export async function getHistory() {
-  const res = await fetch(`${API_BASE}/history`);
-  return res.json();
+export function explain(data) {
+  return client.post('/explain', data).then((res) => res.data);
 }
 
-export async function explainPrediction(input, method = 'shap') {
-  const res = await fetch(`${API_BASE}/explain`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ input, method })
-  });
-  return res.json();
+export function getHistory() {
+  return client.get('/history').then((res) => res.data);
 }
