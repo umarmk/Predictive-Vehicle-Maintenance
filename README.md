@@ -13,9 +13,6 @@ Predictive-Vehicle-Maintenance/
 ├── frontend/              # Frontend web application
 ├── instance/              # (For Flask or similar frameworks)
 ├── notebooks/             # Jupyter notebooks and preprocessing scripts
-│   ├── data_preprocessing.ipynb
-│   ├── eda.ipynb
-│   └── data_preprocessing.py
 └── README.md              # Project overview and instructions
 ```
 

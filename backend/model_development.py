@@ -224,21 +224,34 @@ with mlflow.start_run(run_name="LightGBM_Classification"):
 import torch
 import joblib
 from lstm_pytorch_utils import train_lstm
+import mlflow
+import mlflow.pytorch
 print("Starting LSTM time-series training...")
-try:
-    # Use Engine_Temperature for forecasting
-    series = df["Engine_Temperature_(°C)"].values.astype(float)
-    model_ts, scaler_ts, rmse, mape, _, _ = train_lstm(
-        series, seq_length=10, epochs=20, lr=0.001,
-        batch_size=16, hidden_size=32, num_layers=1
-    )
-    # Save model state_dict and scaler
-    lstm_model_path = os.path.join(models_dir, 'lstm_model.pt')
-    torch.save(model_ts.state_dict(), lstm_model_path)
-    scaler_path = os.path.join(models_dir, 'lstm_scaler.pkl')
-    joblib.dump(scaler_ts, scaler_path)
-    print(f"Saved LSTM state_dict to {lstm_model_path}")
-    print(f"Saved LSTM scaler to {scaler_path}")
-    print(f"LSTM RMSE: {rmse:.4f}, MAPE: {mape:.4f}")
-except Exception as e:
-    print(f"Time series LSTM training failed: {e}")
+mlflow.set_experiment('vehicle_maintenance_timeseries')
+with mlflow.start_run(run_name='LSTM_TimeSeries'):
+    mlflow.log_param('seq_length', 10)
+    mlflow.log_param('epochs', 20)
+    mlflow.log_param('lr', 0.001)
+    mlflow.log_param('batch_size', 16)
+    mlflow.log_param('hidden_size', 32)
+    mlflow.log_param('num_layers', 1)
+    try:
+        # Use Engine_Temperature for forecasting
+        series = df["Engine_Temperature_(°C)"].values.astype(float)
+        model_ts, scaler_ts, rmse, mape, _, _ = train_lstm(
+            series, seq_length=10, epochs=20, lr=0.001,
+            batch_size=16, hidden_size=32, num_layers=1
+        )
+        # Save model state_dict and scaler
+        lstm_model_path = os.path.join(models_dir, 'lstm_model.pt')
+        torch.save(model_ts.state_dict(), lstm_model_path)
+        scaler_path = os.path.join(models_dir, 'lstm_scaler.pkl')
+        joblib.dump(scaler_ts, scaler_path)
+        print(f"Saved LSTM state_dict to {lstm_model_path}")
+        print(f"Saved LSTM scaler to {scaler_path}")
+        print(f"LSTM RMSE: {rmse:.4f}, MAPE: {mape:.4f}")
+        mlflow.log_metric('lstm_rmse', rmse)
+        mlflow.log_metric('lstm_mape', mape)
+        mlflow.pytorch.log_model(model_ts, 'lstm_model')
+    except Exception as e:
+        print(f"Time series LSTM training failed: {e}")
