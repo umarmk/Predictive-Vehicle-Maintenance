@@ -132,18 +132,42 @@ def predict_timeseries():
     except Exception as e:
         logging.error(f'Error loading LSTM model/scaler: {e}')
         return jsonify({'error': f'LSTM load error: {e}'}), 500
-    # Prepare input sequence
+    # Prepare data for forecasting
     arr = np.array(series, dtype=float).reshape(-1,1)
     scaled = scaler_ts.transform(arr)
-    x_seq = scaled[-seq_length:]
-    x_tensor = torch.tensor(x_seq.reshape(1, seq_length, 1), dtype=torch.float32)
+    # Multi-step forecasting support
+    horizon = data.get('horizon', 1)
     try:
+        horizon = int(horizon)
+        if horizon < 1:
+            raise ValueError
+    except:
+        logging.warning('Invalid horizon')
+        return jsonify({'error': '"horizon" must be a positive integer.'}), 400
+    init_seq = scaled[-seq_length:].tolist()
+    predictions = []
+    for _ in range(horizon):
+        seq_arr = np.array(init_seq[-seq_length:]).reshape(1, seq_length, 1)
+        x_tensor = torch.tensor(seq_arr, dtype=torch.float32)
         with torch.no_grad():
-            pred_val = lstm(x_tensor).item()
-    except Exception as e:
-        logging.error(f'LSTM prediction error: {e}')
-        return jsonify({'error': f'Prediction error: {e}'}), 500
-    return jsonify({'prediction': pred_val})
+            pred_scaled = lstm(x_tensor).item()
+        # Append scaled for next iteration
+        init_seq.append([pred_scaled])
+        # Convert back to original scale
+        pred_orig = scaler_ts.inverse_transform([[pred_scaled]])[0][0]
+        predictions.append(pred_orig)
+    # Record forecasting history
+    PREDICTION_HISTORY.append({
+        'type': 'timeseries',
+        'series': series,
+        'seq_length': seq_length,
+        'horizon': horizon,
+        'predictions': predictions
+    })
+    # Return single value or list based on horizon
+    if horizon == 1:
+        return jsonify({'prediction': predictions[0]})
+    return jsonify({'predictions': predictions})
 
 @app.route('/history', methods=['GET'])
 def history():
