@@ -49,7 +49,7 @@ PREDICTION_HISTORY = []
 def predict():
     """
     POST /predict
-    Request JSON: { ...features..., "model": "xgboost"|"lightgbm"|"ensemble" }
+    Request JSON: { ...features... }
     Returns: { "predictions": [...] }
     """
     # Select LightGBM for classification
