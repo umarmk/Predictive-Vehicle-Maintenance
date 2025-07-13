@@ -274,5 +274,3 @@ Predictive-Vehicle-Maintenance/
 - Implements modern web development best practices
 
 ---
-
-**🚀 Ready to predict the future of vehicle maintenance!**
